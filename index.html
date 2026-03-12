@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Existential Errands</title>
+    <style>
+        body { background: #1a1a2e; color: #e94560; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; }
+        .card { border: 2px solid #e94560; padding: 15px; margin: 10px auto; max-width: 400px; border-radius: 8px; }
+        button { background: #e94560; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #444; }
+        #stats { font-size: 1.2rem; margin-bottom: 20px; color: #0f3460; background: #e94560; padding: 10px; display: inline-block; }
+    </style>
+    <link rel="manifest" href="manifest.json">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#e94560">
+
+    <meta property="og:title" content="Existential Errands">
+    <meta property="og:description" content="Mundane tasks for a meaningless universe. Meet Hoot.">
+    <meta property="og:image" content="https://yourusername.github.io/existential-errands/icon.png">
+    <meta property="og:url" content="https://yourusername.github.io/existential-errands/">
+    <meta name="twitter:card" content="summary_large_image">
+    
+    <script>
+        // Register the Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</head>
+<body>
+
+    <h1>🦉 Existential Errands</h1>
+    <div id="stats">XP: <span id="xp">0</span> | Level: <span id="lvl">Unconscious</span></div>
+    
+    <div id="owl-speech">"Oh, you're awake. How... ambitious of you."</div>
+
+    <div class="card">
+        <h3>The Hydration Ritual</h3>
+        <p>Drink a glass of water. Acknowledge your thirst.</p>
+        <button onclick="completeTask(10, 'Your cells are slightly less withered now.')">I Drank Water</button>
+    </div>
+
+    <div class="card">
+        <h3>The Void Stare</h3>
+        <p>Do nothing for 60 seconds.</p>
+        <button id="voidBtn" onclick="startVoid()">Enter the Void</button>
+    </div>
+
+    <script>
+        let xp = 0;
+        function completeTask(points, message) {
+            xp += points;
+            document.getElementById('xp').innerText = xp;
+            document.getElementById('owl-speech').innerText = `"${message}"`;
+            checkLevel();
+        }
+
+        function startVoid() {
+            let btn = document.getElementById('voidBtn');
+            btn.disabled = true;
+            let time = 60;
+            let timer = setInterval(() => {
+                time--;
+                btn.innerText = `Staring... ${time}s`;
+                if(time <= 0) {
+                    clearInterval(timer);
+                    completeTask(20, "You stared into the void. It stared back. It was bored.");
+                    btn.innerText = "Void Completed";
+                }
+            }, 1000);
+        }
+
+        function checkLevel() {
+            if (xp > 50) document.getElementById('lvl').innerText = "Vaguely Aware";
+            if (xp > 100) document.getElementById('lvl').innerText = "Productive Meat-Bag";
+        }
+    </script>
+</body>
+</html>
