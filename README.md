@@ -15,7 +15,7 @@
 - Hosted for free on GitHub Pages
 
 ## 🚀 How to Install
-1. Visit the [Live Link](https://YOUR-USERNAME.github.io/existential-errands/)
+1. Visit the [Live Link](https://malwin-s.github.io/existential-errands/)
 2. **On Android:** Tap "Add to Home Screen" when prompted.
 3. **On iOS:** Tap the 'Share' icon and select "Add to Home Screen."
 
