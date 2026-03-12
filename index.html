@@ -4,77 +4,161 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Existential Errands</title>
-    <style>
-        body { background: #1a1a2e; color: #e94560; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; }
-        .card { border: 2px solid #e94560; padding: 15px; margin: 10px auto; max-width: 400px; border-radius: 8px; }
-        button { background: #e94560; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
-        button:disabled { background: #444; }
-        #stats { font-size: 1.2rem; margin-bottom: 20px; color: #0f3460; background: #e94560; padding: 10px; display: inline-block; }
-    </style>
     <link rel="manifest" href="manifest.json">
-
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#e94560">
-
-    <meta property="og:title" content="Existential Errands">
-    <meta property="og:description" content="Mundane tasks for a meaningless universe. Meet Hoot.">
-    <meta property="og:image" content="https://malwin-s.github.io/existential-errands/icon.svg">
-    <meta property="og:url" content="https://malwin-s.github.io/existential-errands/">
-    <meta name="twitter:card" content="summary_large_image">
     
-    <script>
-        // Register the Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-    </script>
+    <style>
+        body { background: #1a1a2e; color: #e94560; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; line-height: 1.6; }
+        .card { border: 2px solid #e94560; padding: 15px; margin: 10px auto; max-width: 400px; border-radius: 8px; background: #16213e; }
+        button { background: #e94560; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; margin-top: 10px; }
+        button:disabled { background: #444; cursor: not-allowed; }
+        #stats-container { margin-bottom: 20px; background: #e94560; color: white; padding: 15px; display: inline-block; border-radius: 8px; }
+        #owl-speech { font-style: italic; font-size: 1.1rem; margin: 20px auto; max-width: 500px; min-height: 50px; color: #00d2d3; }
+        #secret-reward { display:none; margin-top: 30px; border: 1px dashed #e94560; padding: 20px; border-radius: 8px; background: #0f3460; }
+    </style>
 </head>
 <body>
 
-    <h1>🦉 Existential Errands</h1>
-    <div id="stats">XP: <span id="xp">0</span> | Level: <span id="lvl">Unconscious</span></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 450px; margin: 0 auto;">
+        <h1>🦉 Existential Errands</h1>
+        <button onclick="document.getElementById('settings-dialog').showModal()" 
+                style="background: transparent; font-size: 1.5rem; padding: 10px; margin: 0;">⚙️</button>
+    </div>
     
-    <div id="owl-speech">"Oh, you're awake. How... ambitious of you."</div>
+    <div id="stats-container">
+        <div>XP: <span id="xp">0</span> | Level: <span id="lvl">Unconscious</span></div>
+        <div id="streak-display" style="font-size: 0.8rem; margin-top: 5px; opacity: 0.9;">Streak: 0 Days of Futility</div>
+    </div>
+    
+    <div id="owl-speech">"Oh, you're back. I suppose the universe hasn't collapsed yet."</div>
 
     <div class="card">
         <h3>The Hydration Ritual</h3>
-        <p>Drink a glass of water. Acknowledge your thirst.</p>
+        <p>Drink a glass of water. Lubricate your mortal gears.</p>
         <button onclick="completeTask(10, 'Your cells are slightly less withered now.')">I Drank Water</button>
     </div>
 
     <div class="card">
         <h3>The Void Stare</h3>
-        <p>Do nothing for 60 seconds.</p>
+        <p>Do nothing for 60 seconds. Embrace the silence.</p>
         <button id="voidBtn" onclick="startVoid()">Enter the Void</button>
     </div>
 
+    <dialog id="settings-dialog" style="border: 2px solid #e94560; border-radius: 12px; background: #16213e; color: white; padding: 20px; max-width: 300px;">
+        <h3 style="color: #e94560; margin-top: 0;">Settings</h3>
+        <p style="font-size: 0.8rem; opacity: 0.8;">Dangerous things happen here.</p>
+        
+        <button onclick="confirmReset()" style="background: #ff4757; width: 100%;">🔥 Delete All Memory</button>
+        <br><br>
+        <button onclick="document.getElementById('settings-dialog').close()" style="background: #444; width: 100%;">Back to the Void</button>
+        <p style="font-size: 0.7rem; cursor: pointer; text-decoration: underline;" 
+            onclick="alert('We collect zero data. Your progress stays on your device.')">
+            View Privacy Policy
+        </p>
+    </dialog>
+
+    <div id="secret-reward"></div>
+
     <script>
-        let xp = 0;
+        // --- 1. INITIALIZATION (Load data from memory) ---
+        let xp = parseInt(localStorage.getItem('existential_xp')) || 0;
+        let streak = parseInt(localStorage.getItem('existential_streak')) || 0;
+        let lastCheckIn = localStorage.getItem('last_check_in');
+
+        // Initial UI Render
+        updateUI();
+        handleStreak();
+
+        // --- 2. CORE GAMEPLAY (XP & Tasks) ---
         function completeTask(points, message) {
             xp += points;
-            document.getElementById('xp').innerText = xp;
+            localStorage.setItem('existential_xp', xp);
             document.getElementById('owl-speech').innerText = `"${message}"`;
-            checkLevel();
+            updateUI();
         }
 
+        function updateUI() {
+            document.getElementById('xp').innerText = xp;
+            let rank = "Unconscious";
+            if (xp > 50) rank = "Vaguely Aware";
+            if (xp > 150) rank = "Meat-Bag with Purpose";
+            if (xp > 500) rank = "The Owl's Favorite";
+            document.getElementById('lvl').innerText = rank;
+            
+            if (streak >= 7) revealSecretPoem();
+        }
+
+        // --- 3. STREAK LOGIC (Daily Check-ins) ---
+        function handleStreak() {
+            const today = new Date().toISOString().split('T')[0];
+            if (lastCheckIn === today) {
+                renderStreak();
+                return;
+            }
+
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            if (lastCheckIn === yesterdayStr) {
+                streak++;
+            } else {
+                if (lastCheckIn) {
+                    document.getElementById('owl-speech').innerText = `"You missed a day. The void didn't notice, but I did."`;
+                }
+                streak = 1;
+            }
+
+            localStorage.setItem('existential_streak', streak);
+            localStorage.setItem('last_check_in', today);
+            renderStreak();
+        }
+
+        function renderStreak() {
+            document.getElementById('streak-display').innerText = `Streak: ${streak} Days of Futility`;
+        }
+
+        // --- 4. THE VOID TIMER ---
         function startVoid() {
-            let btn = document.getElementById('voidBtn');
+            const btn = document.getElementById('voidBtn');
+            const startTime = Date.now();
+            const duration = 60000; 
             btn.disabled = true;
-            let time = 60;
-            let timer = setInterval(() => {
-                time--;
-                btn.innerText = `Staring... ${time}s`;
-                if(time <= 0) {
+
+            const timer = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.ceil((duration - elapsed) / 1000);
+
+                if (remaining <= 0) {
                     clearInterval(timer);
-                    completeTask(20, "You stared into the void. It stared back. It was bored.");
+                    completeTask(20, "You stared into the void. It blinked first.");
                     btn.innerText = "Void Completed";
+                } else {
+                    btn.innerText = `Staring... ${remaining}s`;
                 }
             }, 1000);
         }
 
-        function checkLevel() {
-            if (xp > 50) document.getElementById('lvl').innerText = "Vaguely Aware";
-            if (xp > 100) document.getElementById('lvl').innerText = "Productive Meat-Bag";
+        // --- 5. SETTINGS & RESET (The new part!) ---
+        function confirmReset() {
+            const warning = "This will erase your XP, your streak, and Hoot's memory of you. Proceed into oblivion?";
+            if (confirm(warning)) {
+                localStorage.clear();
+                // This refreshes the app so it goes back to Day 0
+                location.reload();
+            }
+        }
+
+        function revealSecretPoem() {
+            const secretDiv = document.getElementById('secret-reward');
+            secretDiv.style.display = 'block';
+            secretDiv.innerHTML = `<h3>🦉 Hoot's 7-Day "Gift"</h3><p><i>The code is compiled,<br>The status is green,<br>But what does it matter<br>Behind the glass screen?</i></p>`;
+        }
+
+        // --- 6. PWA REGISTRATION (Offline mode) ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
         }
     </script>
 </body>
