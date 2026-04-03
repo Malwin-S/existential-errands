@@ -24,9 +24,48 @@
         #stats-container { margin-bottom: 20px; background: #e94560; color: white; padding: 15px; display: inline-block; border-radius: 8px; }
         #owl-speech { font-style: italic; font-size: 1.1rem; margin: 20px auto; max-width: 500px; min-height: 50px; color: #00d2d3; }
         #secret-reward { display:none; margin-top: 30px; border: 1px dashed #e94560; padding: 20px; border-radius: 8px; background: #0f3460; }
+        
+        .flicker {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; text-shadow: 0 0 5px #00d2d3; }
+            50% { opacity: 0.3; text-shadow: none; }
+            100% { opacity: 1; text-shadow: 0 0 5px #00d2d3; }
+        }
+
+        /* To hide the screen smoothly */
+        .fade-out {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f2d74e;
+            top: -10px;
+            z-index: 10000;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
     </style>
 </head>
 <body>
+
+    <div id="loading-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #16213e; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease;">
+        <div style="font-size: 3rem; margin-bottom: 20px;">🦉</div>
+        <div id="loading-text" class="flicker" style="color: #00d2d3; font-family: monospace; letter-spacing: 2px;">
+            CONNECTING TO THE VOID...
+        </div>
+    </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center; max-width: 450px; margin: 0 auto;">
         <h1><span id="hoot-icon" onclick="devClick()" style="cursor: pointer; font-size: 2rem;">🦉</span> Existential Errands</h1>
@@ -66,7 +105,10 @@
     <dialog id="settings-dialog" style="border: 2px solid #e94560; border-radius: 12px; background: #16213e; color: white; padding: 20px; max-width: 300px;">
         <h3 style="color: #e94560; margin-top: 0;">Settings</h3>
         <p style="font-size: 0.8rem; opacity: 0.8;">Dangerous things happen here.</p>
-        
+        <button onclick="exportData()" 
+            style="background: #00d2d3; color: #16213e; width: 100%; margin-bottom: 10px; font-weight: bold;">
+            💾 Download My History
+        </button>
         <button onclick="confirmReset()" style="background: #ff4757; width: 100%;">🔥 Delete All Memory</button>
         <br><br>
         <button onclick="document.getElementById('settings-dialog').close()" style="background: #444; width: 100%;">Back to the Void</button>
@@ -85,11 +127,29 @@
     <div id="secret-reward"></div>
 
     <script>
+
+        // --- 0. LOADING SCREEN LOGIC ---
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loading-screen');
+                loader.classList.add('fade-out');
+        
+                // Fully remove from DOM after fade animation is done
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 500); 
+            }, 2000); // 2 seconds of "connecting"
+        });
+
         // --- 1. INITIALIZATION (Load data from memory) ---
         let xp = parseInt(localStorage.getItem('existential_xp')) || 0;
         let streak = parseInt(localStorage.getItem('existential_streak')) || 0;
         let lastCheckIn = localStorage.getItem('last_check_in');
         let devClicks = 0; // <--- NEW: Track clicks on Hoot
+
+        // Add a "flag" at the top of your script to track the achievement
+        let hasCelebrated500 = localStorage.getItem('achieved_500') === 'true';
+
         let regrets = JSON.parse(localStorage.getItem('existential_regrets')) || [];
         renderRegrets(); // Call this on page load
 
@@ -121,9 +181,17 @@
             let rank = "Unconscious";
             if (xp > 50) rank = "Vaguely Aware";
             if (xp > 150) rank = "Meat-Bag with Purpose";
-            if (xp > 500) rank = "The Owl's Favorite";
+            if (xp >= 500) {
+                rank = "The Owl's Favorite";
+                // Trigger celebration only if it's the first time
+                if (!hasCelebrated500) {
+                    celebrate();
+                    hasCelebrated500 = true;
+                    localStorage.setItem('achieved_500', 'true');
+                }
+            }
+
             document.getElementById('lvl').innerText = rank;
-            
             if (streak >= 7) revealSecretPoem();
         }
 
@@ -188,6 +256,33 @@
         }
 
         // --- 5. SETTINGS, RESET & GOD MODE ---
+
+        function exportData() {
+            // 1. Prepare the content
+            const currentLevel = document.getElementById('lvl').innerText;
+            const logHeader = `EXISTENTIAL ERRANDS - DATA EXPORT\n`;
+            const stats = `--------------------------------\nXP: ${xp}\nLevel: ${currentLevel}\nStreak: ${streak} Days\n--------------------------------\n\n`;
+            const logBody = regrets.length > 0 ? "LOG OF REGRETS:\n" + regrets.join('\n') : "No regrets recorded.";
+    
+            const fullText = logHeader + stats + logBody;
+
+            // 2. Create a "Blob" (Binary Large Object) of the text
+            const blob = new Blob([fullText], { type: 'text/plain' });
+    
+            // 3. Create a temporary link to trigger the download
+            const tempLink = document.createElement('a');
+            tempLink.href = URL.createObjectURL(blob);
+            tempLink.download = `my_futility_report_${new Date().toISOString().split('T')[0]}.txt`;
+    
+            // 4. "Click" the link and then remove it
+            document.body.appendChild(tempLink);
+            tempLink.click();
+            document.body.removeChild(tempLink);
+    
+            // 5. Let Hoot comment on it
+            document.getElementById('owl-speech').innerText = '"Oh, you want a physical copy of your failures? How... sentimental."';
+        }
+
         function confirmReset() {
             const warning = "This will erase your XP, your streak, and Hoot's memory of you. Proceed into oblivion?";
             if (confirm(warning)) {
@@ -253,6 +348,36 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
+
+        // --- 7. ANIMATIONS & EFFECTS ---
+
+        function celebrate() {
+            const colors = ['#e94560', '#00d2d3', '#f2d74e', '#ffffff'];
+    
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'confetti';
+        
+                // Randomize appearance
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.transform = `rotate(${Math.random() * 360}deg)`;
+        
+                // Randomize fall speed and delay
+                const fallDuration = Math.random() * 3 + 2 + 's';
+                const fallDelay = Math.random() * 2 + 's';
+                particle.style.animation = `fall ${fallDuration} linear ${fallDelay} forwards`;
+
+                document.body.appendChild(particle);
+
+                // Clean up memory by removing the element after it falls
+                setTimeout(() => particle.remove(), 5000);
+            }
+    
+            document.getElementById('owl-speech').innerText = '"500 XP? You’ve wasted a significant amount of time. I’m almost proud."';
+        }
+
     </script>
+    
 </body>
 </html>
